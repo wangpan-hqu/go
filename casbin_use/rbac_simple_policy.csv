@@ -1,0 +1,13 @@
+p, data2_admin, data2, read
+p, data2_admin, data2, write
+
+g, alice, data2_admin
+
+
+
+#p, reader, data2, read
+#p, writer, data2, write
+
+#g, admin, reader
+#g, admin, writer
+#g, alice, admin
