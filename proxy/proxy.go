@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"fmt"
+	"golang.org/x/net/proxy"
 	"io"
 	"math/rand"
 	"net"
@@ -9,6 +10,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"strings"
+	"time"
 )
 
 //正向代理
@@ -57,4 +59,62 @@ func NewMultipleHostsReverseProxy(targets []*url.URL) *httputil.ReverseProxy {
 		req.URL.Path = target.Path
 	}
 	return &httputil.ReverseProxy{Director: director}
+}
+
+var DefaultHttpClient *http.Client
+var ProxyHttpClient *http.Client
+
+func InitHttpClient() {
+	// not use proxy
+	DefaultHttpClient = http.DefaultClient
+
+	// use proxy
+	ProxyHttpClient = getProxyHttpClient()
+}
+
+func isAddressOpen(address string) bool {
+	timeout := time.Millisecond * 100
+	conn, err := net.DialTimeout("tcp", address, timeout)
+	if err != nil {
+		// cannot connect to address, proxy is not active
+		return false
+	}
+
+	if conn != nil {
+		defer conn.Close()
+		fmt.Printf("Socks5 proxy enabled: %s\n", address)
+		return true
+	}
+
+	return false
+}
+
+func getProxyHttpClient() *http.Client {
+	httpProxy := "127.0.0.1:8080"
+	if httpProxy == "" {
+		return &http.Client{}
+	}
+
+	if !isAddressOpen(httpProxy) {
+		return &http.Client{}
+	}
+
+	// https://stackoverflow.com/questions/33585587/creating-a-go-socks5-client
+	dialer, err := proxy.SOCKS5("tcp", httpProxy, nil, proxy.Direct)
+	if err != nil {
+		panic(err)
+	}
+
+	tr := &http.Transport{Dial: dialer.Dial}
+	return &http.Client{
+		Transport: tr,
+	}
+}
+
+func GetHttpClient(url string) *http.Client {
+	if strings.Contains(url, "githubusercontent.com") {
+		return ProxyHttpClient
+	} else {
+		return DefaultHttpClient
+	}
 }

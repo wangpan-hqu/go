@@ -45,3 +45,24 @@ func test3() {
 
 	log.Fatal(http.ListenAndServe(":8888", nil))
 }
+
+func test4() {
+
+	InitHttpClient()
+	//http.Handle("/", )
+	/*req, err := http.NewRequest("get", "http://localhost:9090/", nil)
+	if err !=nil{
+		os.Exit(0)
+	}
+	resp, err :=proxy.ProxyHttpClient.Do(req)
+	if err !=nil{
+		os.Exit(0)
+	}
+	defer resp.Body.Close()
+	*/
+
+	http.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
+		writer.Write([]byte("sucess"))
+	})
+	http.ListenAndServe("localhost:9090", nil)
+}
